@@ -183,16 +183,12 @@
 <script>
 
 let scanner = null;
-
 let camaraActiva = false;
-
 let codigoDetectado = '';
-
 
 /* ==========================================
    ACTIVAR CÁMARA
 ========================================== */
-
 async function iniciarCamara() {
 
   if (typeof Html5Qrcode === 'undefined') {
@@ -202,7 +198,6 @@ async function iniciarCamara() {
 
   mostrarEstado('Iniciando cámara...', false);
 
-  // 1. Si existe un escáner activo previa o colgado, lo detenemos y limpiamos
   if (scanner) {
     try {
       if (camaraActiva) {
@@ -216,7 +211,6 @@ async function iniciarCamara() {
     camaraActiva = false;
   }
 
-  // 2. Creamos una instancia totalmente limpia del lector
   scanner = new Html5Qrcode('reader');
 
   const configuracion = {
@@ -228,7 +222,6 @@ async function iniciarCamara() {
     aspectRatio: 1.0
   };
 
-  // 3. Encendemos la cámara
   scanner.start(
     { facingMode: 'environment' },
     configuracion,
@@ -247,155 +240,88 @@ async function iniciarCamara() {
     camaraActiva = false;
     console.error(error);
     mostrarEstado(
-      'No se pudo activar la cámara. Verifica los permisos del navegador o recarga la página.',
+      'No se pudo activar la cámara. Verifica los permisos del navegador.',
       true
     );
   });
 }
 
-
 /* ==========================================
-   CÓDIGO ENCONTRADO
+   CÓDIGO ENCONTRADO (AUTOMÁTICO)
 ========================================== */
-
 function codigoEncontrado(texto) {
 
-  texto =
-    String(texto || '').trim();
+  texto = String(texto || '').trim();
 
-
-  if (!texto) return;
-
-
-  if (codigoDetectado === texto) {
-
-    return;
-
-  }
-
+  if (!texto || codigoDetectado === texto) return;
 
   codigoDetectado = texto;
 
+  document.getElementById('codigo').textContent = 'Código detectado: ' + texto;
+  document.getElementById('codigo').style.display = 'block';
+  document.getElementById('volver').style.display = 'block';
 
-  detenerCamara();
+  mostrarEstado('✅ Código detectado. Redirigiendo...', false);
 
-
-  document.getElementById(
-    'codigo'
-  ).textContent =
-    'Código detectado: ' + texto;
-
-
-  document.getElementById(
-    'codigo'
-  ).style.display =
-    'block';
-
-
-  document.getElementById(
-    'volver'
-  ).style.display =
-    'block';
-
-
-  mostrarEstado(
-    '✅ Código detectado correctamente.',
-    false
-  );
-
+  // Detenemos la cámara y redirigimos inmediatamente
+  detenerYRedirigir();
 }
-
 
 /* ==========================================
    DETENER CÁMARA
 ========================================== */
-
 function detenerCamara() {
-
-  if (!scanner || !camaraActiva) {
-
-    return;
-
-  }
-
+  if (!scanner || !camaraActiva) return;
 
   scanner.stop()
-
-    .then(function() {
-
-      camaraActiva = false;
-
-    })
-
-    .catch(function(error) {
-
-      console.log(error);
-
-      camaraActiva = false;
-
-    });
-
+    .then(function() { camaraActiva = false; })
+    .catch(function(error) { console.log(error); camaraActiva = false; });
 }
 
-
 /* ==========================================
-   VOLVER AL INVENTARIO
+   VOLVER AL INVENTARIO (FORZADO)
 ========================================== */
-
-function volverInventario() {
-  if (!codigoDetectado) {
-    return;
-  }
-
+function detenerYRedirigir() {
   const inventarioUrl =
     'https://script.google.com/macros/s/AKfycby4w64q3aolM1FFl6DxfI4o5LZj9ErJmSFEFvn6sSAGcYN6xMLRNCRiiBrpU1E1BKwUEg/exec';
 
-  const destino =
-    inventarioUrl +
-    '?codigo=' +
-    encodeURIComponent(codigoDetectado);
+  const destino = inventarioUrl + '?codigo=' + encodeURIComponent(codigoDetectado);
 
-  // Si la cámara sigue activa, la detenemos y esperamos a que se libere antes de redirigir
+  const irADestino = function() {
+    if (window.top) {
+      window.top.location.href = destino;
+    } else {
+      window.location.href = destino;
+    }
+  };
+
   if (scanner && camaraActiva) {
     scanner.stop()
       .then(function() {
         camaraActiva = false;
-        window.location.href = destino;
+        setTimeout(irADestino, 300);
       })
       .catch(function(err) {
-        console.log("Error deteniendo escáner:", err);
         camaraActiva = false;
-        window.location.href = destino;
+        irADestino();
       });
   } else {
-    window.location.href = destino;
+    irADestino();
   }
 }
 
+function volverInventario() {
+  if (!codigoDetectado) return;
+  detenerYRedirigir();
+}
 
 /* ==========================================
    MENSAJE
 ========================================== */
-
-function mostrarEstado(
-  texto,
-  error
-) {
-
-  const elemento =
-    document.getElementById(
-      'estado'
-    );
-
-
+function mostrarEstado(texto, error) {
+  const elemento = document.getElementById('estado');
   elemento.textContent = texto;
-
-
-  elemento.className =
-    error
-      ? 'estado error'
-      : 'estado ';
-
+  elemento.className = error ? 'estado error' : 'estado';
 }
 
 </script>
