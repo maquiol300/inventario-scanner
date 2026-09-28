@@ -391,36 +391,33 @@ function detenerCamara() {
 ========================================== */
 
 function volverInventario() {
-
   if (!codigoDetectado) {
-
     return;
-
   }
-
-
-  /*
-   * Tu aplicación de Google Apps Script.
-   */
 
   const inventarioUrl =
     'https://script.google.com/macros/s/AKfycby4w64q3aolM1FFl6DxfI4o5LZj9ErJmSFEFvn6sSAGcYN6xMLRNCRiiBrpU1E1BKwUEg/exec';
 
-
-  /*
-   * Enviamos el código mediante la URL.
-   */
-
-  const url =
+  const destino =
     inventarioUrl +
     '?codigo=' +
-    encodeURIComponent(
-      codigoDetectado
-    );
+    encodeURIComponent(codigoDetectado);
 
-
-  window.location.href = url;
-
+  // Si la cámara sigue activa, la detenemos y esperamos a que se libere antes de redirigir
+  if (scanner && camaraActiva) {
+    scanner.stop()
+      .then(function() {
+        camaraActiva = false;
+        window.location.href = destino;
+      })
+      .catch(function(err) {
+        console.log("Error deteniendo escáner:", err);
+        camaraActiva = false;
+        window.location.href = destino;
+      });
+  } else {
+    window.location.href = destino;
+  }
 }
 
 
