@@ -193,112 +193,64 @@ let codigoDetectado = '';
    ACTIVAR CÁMARA
 ========================================== */
 
-function iniciarCamara() {
-
-  if (camaraActiva) {
-
-    mostrarEstado(
-      'La cámara ya está activa.',
-      false
-    );
-
-    return;
-
-  }
-
+async function iniciarCamara() {
 
   if (typeof Html5Qrcode === 'undefined') {
-
-    mostrarEstado(
-      'No se pudo cargar el lector.',
-      true
-    );
-
+    mostrarEstado('No se pudo cargar la librería del lector.', true);
     return;
-
   }
 
+  mostrarEstado('Iniciando cámara...', false);
 
-  scanner =
-    scanner ||
-    new Html5Qrcode('reader');
+  // 1. Si existe un escáner activo previa o colgado, lo detenemos y limpiamos
+  if (scanner) {
+    try {
+      if (camaraActiva) {
+        await scanner.stop();
+      }
+      await scanner.clear();
+    } catch (e) {
+      console.log('Limpiando escáner previo:', e);
+    }
+    scanner = null;
+    camaraActiva = false;
+  }
 
-
-  mostrarEstado(
-    'Solicitando permiso para usar la cámara...',
-    false
-  );
-
+  // 2. Creamos una instancia totalmente limpia del lector
+  scanner = new Html5Qrcode('reader');
 
   const configuracion = {
-
     fps: 10,
-
     qrbox: function(width, height) {
-
-      const size =
-        Math.min(width, height) * 0.70;
-
-      return {
-        width: size,
-        height: size
-      };
-
+      const size = Math.min(width, height) * 0.70;
+      return { width: size, height: size };
     },
-
     aspectRatio: 1.0
-
   };
 
-
+  // 3. Encendemos la cámara
   scanner.start(
-
-    {
-      facingMode: 'environment'
-    },
-
+    { facingMode: 'environment' },
     configuracion,
-
     function(texto) {
-
       codigoEncontrado(texto);
-
     },
-
     function(error) {
-
-      // No mostrar los errores normales
-      // mientras busca el código.
-
+      // Ignorar errores continuos de escaneo
     }
-
   )
-
   .then(function() {
-
     camaraActiva = true;
-
-    mostrarEstado(
-      '📷 Cámara activa. Apunta al código.',
-      false
-    );
-
+    mostrarEstado('📷 Cámara activa. Apunta al código.', false);
   })
-
   .catch(function(error) {
-
     camaraActiva = false;
-
     console.error(error);
-
     mostrarEstado(
-      'No se pudo activar la cámara. ' +
-      'Verifica el permiso del navegador.',
+      'No se pudo activar la cámara. Verifica los permisos del navegador o recarga la página.',
       true
     );
-
   });
-
 }
 
 
