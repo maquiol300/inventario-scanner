@@ -288,18 +288,20 @@ function detenerYRedirigir() {
   const destino = inventarioUrl + '?codigo=' + encodeURIComponent(codigoDetectado);
 
   const irADestino = function() {
-    if (window.top) {
-      window.top.location.href = destino;
-    } else {
-      window.location.href = destino;
-    }
+    // Creamos un enlace dinámico para simular un clic real del usuario
+    // Esto evita que Google Drive intente abrir la URL como un archivo interno
+    let a = document.createElement('a');
+    a.href = destino;
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
   };
 
   if (scanner && camaraActiva) {
     scanner.stop()
       .then(function() {
         camaraActiva = false;
-        setTimeout(irADestino, 300);
+        setTimeout(irADestino, 200);
       })
       .catch(function(err) {
         camaraActiva = false;
